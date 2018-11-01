@@ -1,0 +1,303 @@
+from tkinter import *
+from tkinter.messagebox import showinfo
+
+def popup_empty():
+    bericht = 'Laat geen velden leeg!'
+    showinfo(title='popup', message=bericht)
+
+def popup_wrong_char():
+    bericht = 'Gebuik van ; niet toegestaan'
+    showinfo(title='popup', message=bericht)
+
+def popup_wachtwoorden():
+    bericht = 'Wachtwoorden komen niet overeen!'
+    showinfo(title='popup', message=bericht)
+
+def popup_email():
+    bericht = 'Dit email adress is al in gebruik!'
+    showinfo(title='popup', message=bericht)
+
+def popup_stallen():
+    bericht = 'De fietsenstalling zit vol!'
+    showinfo(title='popup', message=bericht)
+
+def popup_wrong_login():
+    bericht = 'Verkeerde combinatie'
+    showinfo(title='popup', message=bericht)
+
+def registreren():
+    'Vraagt de gebruiker om een naam en email adress op te geven, ook wordt een wachtwoord opgevraagd. dit word opgeslagen in het bestand fietsenstalling.csv.'
+    import datetime
+    nu = datetime.datetime.now()
+    datum = nu.strftime("%d-%m-%Y")
+
+    fietsenstalling_read = open('fietsenstalling.csv', 'r')
+    x = str(fietsenstalling_read.readlines())
+    y = x.split(';')
+    error=0
+
+
+    naam = naam_entry.get()
+    if len(naam) > 0 and ';' not in naam:
+        toon_hoofdframe()
+    elif len(naam) == 0:
+        popup_empty()
+        error+=1
+    elif ';' in naam:
+        popup_wrong_char()
+        error+=1
+
+    email = email_entry.get()
+    if len(email) > 0 and ';' not in email and email not in y:
+        toon_hoofdframe()
+    elif len(email) == 0:
+        popup_empty()
+        error+=1
+    elif ';' in email:
+        popup_wrong_char()
+        error+=1
+    elif email in y:
+        popup_email()
+        error+=1
+        toon_hoofdframe()
+
+    wachtwoord = wachtwoord_entry.get()
+    if len(wachtwoord) > 0 and ';' not in wachtwoord:
+        toon_hoofdframe()
+    elif len(wachtwoord) == 0:
+        popup_empty()
+        error+=1
+    elif ';' in wachtwoord:
+        popup_wrong_char()
+        error+=1
+
+    wachtwoord_check=wachtwoord_check_entry.get()
+    if wachtwoord_check != wachtwoord:
+        popup_wachtwoorden()
+        error+=1
+        toon_hoofdframe()
+
+    if error==0:
+        registratie_info = naam + ';' + email + ';' + wachtwoord + ';' + datum + '\n'
+        fietsenstalling_append = open('fietsenstalling.csv', 'a')
+        fietsenstalling_append.write(registratie_info)
+
+def algemene_informatie():
+    import csv
+    keuze2 = open('gestaldefietsen.csv', 'r')
+    gestaldefietsenArray = []
+    for row in csv.reader(keuze2, delimiter=';'):
+        gestaldefietsenArray.append(row)
+        firstrow = gestaldefietsenArray[0]
+        bericht = 'De datum van de langste staltijd van een fiets in deze fietsenstalling is' + firstrow[-1]
+        showinfo(title='popup', message=bericht)
+        break
+    keuze2.close()
+
+    with open('gestaldefietsen.csv', 'r') as keuze2_1:
+        reader = csv.reader(keuze2_1, delimiter=';')
+        row_count = sum(1 for row in reader)
+        bericht = 'Er zijn ' + str(row_count) + ' van de 500 fietsen in de fietsenstalling'
+        showinfo(title='popup', message=bericht)
+
+def inloggen():
+    email = inlog_email_entry.get()
+    wachtwoord = inlog_wachtwoord_entry.get()
+    lines=0
+    error=0
+
+    if len(email)==0 or len(wachtwoord)==0:
+        popup_empty()
+
+    else:
+        fietsenstalling_read = open('fietsenstalling.csv', 'r')
+        for line in fietsenstalling_read:
+            lines+=1
+            email_wachtwoord_combinatie = line.split(';')
+            if email != email_wachtwoord_combinatie[1] or wachtwoord != email_wachtwoord_combinatie[2]:
+                error+=1
+                continue
+            else:
+                toon_post_login()
+        if lines==error:
+            popup_wrong_login()
+
+
+
+def numlines(filename):
+    infile = open(filename, 'r')
+    lineList = infile.readlines()
+    infile.close()
+
+    return len(lineList)
+
+hoeveel_gestalde_fietsen = numlines('gestaldefietsen.csv')
+
+def stallen():
+    import datetime
+    nu = datetime.datetime.now()
+    if hoeveel_gestalde_fietsen >= 500:
+        popup_stallen()
+    else:
+        naam = stallen_naam_entry.get()
+        email = inlog_email_entry.get()
+        datum = str(nu.strftime("%d-%m-%Y"))+' om '+str(nu.strftime("%H:%M"))
+
+        stallen_info = naam + ';' + email + '; ' + datum + '\n'
+        info_check = naam + ';' + email
+
+        fietsenstalling_read = open('gestaldefietsen.csv', 'r')
+        lines = fietsenstalling_read.readlines()
+
+
+        if info_check in lines:
+            print('U heeft al een fiets gestald.')
+            fietsenstalling_read.close()
+        elif info_check not in lines:
+            fietsenstalling_read.close()
+            fietsenstalling_write = open('gestaldefietsen.csv', 'a')
+
+            fietsenstalling_write.write(stallen_info)
+            fietsenstalling_write.close()
+
+def ophalen():
+    'Vraagt naam en email en zoekt bijbehorende fiets, wanneer deze bestaat in de database word deze verwijderd. Is deze onbekend dan krijgt de gebruiker een error.'
+    naam =  ophalen_naam_entry.get()
+    email = inlog_email_entry.get()
+
+    if len(naam)==0 or len(email)==0:
+        popup_empty()
+    else:
+        fietsenstalling_read = open('gestaldefietsen.csv', 'r')
+        onbekende_fietsen=0
+        aantal_fietsen=0
+        schrijf=['']
+        for line in fietsenstalling_read:
+            aantal_fietsen+=1
+            naam_email_combinatie=line.split(';')
+            if naam!=naam_email_combinatie[0] or email!=naam_email_combinatie[1]:
+                schrijf[0]+=line
+                onbekende_fietsen+=1
+        if onbekende_fietsen==aantal_fietsen:
+            print('Combinatie naam en email niet bekend!')
+        else:
+            print('U kunt uw fiets ophalen')
+        fietsenstalling_write = open('gestaldefietsen.csv', 'w')
+        fietsenstalling_write.write(schrijf[0])
+        fietsenstalling_write.close()
+        fietsenstalling_read.close()
+
+def toon_hoofdframe():
+    frame_registratie.pack_forget()
+    post_login_frame.pack_forget()
+    stallen_frame.pack_forget()
+    ophalen_frame.pack_forget()
+    back_button.pack_forget()
+    hoofdframe.pack()
+
+def toon_registratie():
+    hoofdframe.pack_forget()
+    frame_registratie.pack()
+    back_button.pack()
+
+def toon_post_login():
+    hoofdframe.pack_forget()
+    post_login_frame.pack()
+    back_button.pack()
+
+def toon_stallen_frame():
+    post_login_frame.pack_forget()
+    back_button.pack_forget()
+    stallen_frame.pack()
+    back_button.pack()
+
+def toon_ophalen_frame():
+    post_login_frame.pack_forget()
+    back_button.pack_forget()
+    ophalen_frame.pack()
+    back_button.pack()
+
+
+
+root=Tk()
+
+#Terug knop
+back_button = Frame(master=root)
+back_button.pack(fill="both", expand=True)
+button_back = Button(master=back_button, text='Terug', command=toon_hoofdframe)
+button_back.pack(padx=5, pady=5)
+
+#Hoofd frame
+hoofdframe=Frame(master=root)
+hoofdframe.pack(fill='both', expand=True)
+inlog_email_label=Label(master=hoofdframe, text='email')
+inlog_email_label.pack(pady=5,padx=5)
+inlog_email_entry=Entry(master=hoofdframe)
+inlog_email_entry.pack(pady=5, padx=5)
+inlog_wachtwoord_label=Label(master=hoofdframe, text='wachtwoord')
+inlog_wachtwoord_label.pack(pady=5, padx=5)
+inlog_wachtwoord_entry=Entry(master=hoofdframe)
+inlog_wachtwoord_entry.pack(pady=5, padx=5)
+inlog_button=Button(master=hoofdframe, text='inloggen', command=inloggen)
+inlog_button.pack(pady=10,padx=10)
+registreren_button=Button(master=hoofdframe, text='registreren', command=toon_registratie)
+registreren_button.pack(pady=10,padx=10)
+algemene_informatie=Button(master=hoofdframe, text='algemene informatie', command=algemene_informatie)
+algemene_informatie.pack(pady=10,padx=10)
+
+
+#Registratie frame
+frame_registratie=Frame(master=root)
+frame_registratie.pack()
+naam_label=Label(master=frame_registratie, text='naam:')
+naam_label.pack(padx=5, pady=5)
+naam_entry=Entry(master=frame_registratie)
+naam_entry.pack(padx=5, pady=5)
+email_label=Label(master=frame_registratie, text='email:')
+email_label.pack(padx=5, pady=5)
+email_entry=Entry(master=frame_registratie)
+email_entry.pack(padx=5, pady=5)
+wachtwoord_label=Label(master=frame_registratie, text='wachtwoord:')
+wachtwoord_label.pack(padx=5, pady=5)
+wachtwoord_entry=Entry(master=frame_registratie)
+wachtwoord_entry.pack(padx=5, pady=5)
+wachtwoorden_check_label=Label(master=frame_registratie, text='wachtwoord bevestigen:')
+wachtwoorden_check_label.pack(padx=5, pady=5)
+wachtwoord_check_entry=Entry(master=frame_registratie)
+wachtwoord_check_entry.pack(padx=5, pady=5)
+button_registratie=Button(master=frame_registratie, text='registreer', command=registreren)
+button_registratie.pack(padx=5, pady=5)
+
+#Post login frame
+post_login_frame=Frame(master=root)
+post_login_frame.pack()
+button_stallen=Button(master=post_login_frame, text='stallen', command=toon_stallen_frame)
+button_stallen.pack(pady=5, padx=5)
+button_ophalen=Button(master=post_login_frame, text='ophalen', command=toon_ophalen_frame)
+button_ophalen.pack(pady=5, padx=5)
+button_informatie=Button(master=post_login_frame, text='informatie')
+button_informatie.pack(pady=5, padx=5)
+
+#Stallen frame
+stallen_frame=Frame(master=root)
+stallen_frame.pack()
+stallen_naam_label=Label(master=stallen_frame, text='naam')
+stallen_naam_label.pack(pady=5, padx=5)
+stallen_naam_entry=Entry(master=stallen_frame)
+stallen_naam_entry.pack(pady=5, padx=5)
+stallen_button=Button(master=stallen_frame, text='stal',command= stallen)
+stallen_button.pack(pady=5, padx=5)
+
+#Ophalen frame
+ophalen_frame=Frame(master=root)
+ophalen_frame.pack()
+ophalen_naam_label=Label(master=ophalen_frame, text='naam')
+ophalen_naam_label.pack(pady=5, padx=5)
+ophalen_naam_entry=Entry(master=ophalen_frame)
+ophalen_naam_entry.pack(pady=5, padx=5)
+ophalen_button=Button(master=ophalen_frame, text='ophalen', command=ophalen)
+ophalen_button.pack(pady=5, padx=5)
+
+
+toon_hoofdframe()
+root.mainloop()
